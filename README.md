@@ -1,16 +1,42 @@
-# 7speaking-bot-remastered
-The 7speaking bot but remastered with some delay and more invisible from anti-cheat
+# 7Speaking Bot Remastered
 
-# WARNING!
-This script is not working anymore. There is absolutly no more automatism due to 7speaking.
-7Speaking enable an anti-bot on all exams and training, and the actual script cannot pass this.
+This is an English bot that allows you to perform 7Speaking exercises automatically, simulating a real user with appropriate waits and anti-bot detection mechanisms.
 
-I'm working on a new version. In first, it will be exclusive for toeic, and will be available for other later.
-This version will theorically bypass the anti-bot protection.
-The code will also be refactor, so it's become more easy to read it and edit it!
-I'll also do a 'guide to use' for this!
+## Installation
 
-15/01/25 | 21h:36 (Paris): I've bypass 7speaking anti-bot service :) Bot will come back soon for toeic only! <br>
-15/01/25 | 23h:07 (Paris): The bot is now stable! I will try it a little more time and start developping other mode (like quizz, linguaskill, etc, etc) <br>
-15/01/25 | 23h:32 (Paris): I get in front of a big trouble. I'm always only able to make the first test... I'm searching for the difference in the request and how to get it.
-16/01/25 | 17h:23 (Paris): Bot is ended for toeic and toelf, wait for a refactor. I publish it rigth after.
+To use this bot, you need to add the script to an extension called Tampermonkey.
+
+1. Install [Tampermonkey](https://www.tampermonkey.net/) for your browser.
+2. Add the desired script to Tampermonkey.
+
+## Available Versions
+
+### `oldv1.js`
+
+- **Description**: This is the old bot version.
+- **Status**: Contains ugly code and is detected by 7Speaking.
+- **Usage**: Not recommended.
+
+### `v2 stable`
+
+- **Description**: This is the stable version of the bot.
+- **Status**: Recommended for use.
+- **Usage**: Preferred version for reliable performance.
+
+### `v2 -dev`
+
+- **Description**: This is the development version of the bot.
+- **Status**: Contains the latest updates but may not work properly.
+- **Usage**: Use with caution, as it may have unstable features.
+
+## Usage
+
+1. Choose the version of the script you want to use.
+2. Copy the script content.
+3. Open Tampermonkey and create a new script.
+4. Paste the copied script content into the new script.
+5. Save and enable the script in Tampermonkey.
+
+## Disclaimer
+
+Use this bot at your own risk. The developers are not responsible for any consequences arising from the use of this bot.
