@@ -13,3 +13,4 @@ I'll also do a 'guide to use' for this!
 15/01/25 | 21h:36 (Paris): I've bypass 7speaking anti-bot service :) Bot will come back soon for toeic only! <br>
 15/01/25 | 23h:07 (Paris): The bot is now stable! I will try it a little more time and start developping other mode (like quizz, linguaskill, etc, etc) <br>
 15/01/25 | 23h:32 (Paris): I get in front of a big trouble. I'm always only able to make the first test... I'm searching for the difference in the request and how to get it.
+16/01/25 | 17h:23 (Paris): Bot is ended for toeic and toelf, wait for a refactor. I publish it rigth after.
