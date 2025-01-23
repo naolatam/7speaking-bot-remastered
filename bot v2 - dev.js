@@ -911,7 +911,7 @@ async function respondQuiz(question, answer, hiddenLevel, hiddingPlace, hideDura
         let question = await getQuizQuestion();
         log("You need to wait:", hideDuration / 1000, "seconds");
         await sleep(hideDuration)
-        document.title = document.title.replace(answer, "7");
+        document.title = title;
         location.hash = "";
         resolve(true);
       } else {
@@ -932,7 +932,7 @@ async function completeQuiz() {
   let question = await getQuizQuestion();
 
   let answer = await findAnswer();
-  if (hiddenLevel == 3) {
+  if (hiddenLevel == 3 ||hiddenLevel == 4) {
     document.title = title;
     location.hash = "";
   }
