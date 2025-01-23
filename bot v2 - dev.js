@@ -9,6 +9,13 @@
 // ==/UserScript==
 
 /*
+ *************************************
+ ************ 7SPEAKING BOT ***********
+ *************************************
+ */
+let title = "7Speaking LMS";
+
+/*
  ******* CONFIGURATION *******
  */
 // Set this to 0 for normal mode
@@ -16,7 +23,7 @@
 // Set this to 2 for no automatic response and no logs, just a green background on rigth response
 // Set this to 3 for no automatic response, no logs, no automatic navigation, hidden response in title/URL
 // Set this to 4 for the same as 3 but with a no delay before showing the response
-let hiddenLevel = 0;
+let hiddenLevel = 4;
 
 // Set the place where you want to hide the response in hiddenLevel 3.
 // You can choose one and set multiple between:
@@ -73,6 +80,9 @@ let numberMapResponse = {
 // This table is void. It's used to store response parse from URL.
 let responseMapQuestion = {};
 
+// This table is use to store the answer of quiz
+let quizAnswerMap = {};
+
 /*
  ******* FUNCTIONS *******
  */
@@ -83,7 +93,9 @@ const isPath = (regex) => regex.test(location.pathname);
 const isThereAudio = () => document.querySelector("audio") !== null;
 const min = (a, b) => (a < b ? a : b);
 const randomBool = () => Math.random() > 0.8;
-
+function error(message) {
+  log(message);
+}
 // This function is used to log text in the console depending on the hiddenLevel
 function log(...text) {
   if (hiddenLevel >= 0) {
@@ -102,7 +114,16 @@ function getExamMode() {
     }
   }
 }
+// This function is used to return the id of test
+function getExamId() {
+  const search = new URLSearchParams(location.search);
 
+  if (search.has("id")) {
+    return search.get("id");
+  } else {
+    return 1;
+  }
+}
 // This function is used to get the time we should wait as a real person to respond.
 async function getTimeTosleep(answer) {
   if (hiddenLevel != 4) {
@@ -168,21 +189,11 @@ async function getContainer(logEnabled = true) {
   const e = await waitForQuerySelector(".question_content", logEnabled);
   return getReactElement(e);
 }
-// This function is used to return the id of test
-function getTestId() {
-  const search = new URLSearchParams(location.search);
-
-  if (search.has("id")) {
-    return search.get("id");
-  } else {
-    return 1;
-  }
-}
 // This function is used to get the correct answer of the question without any delay and mistakes
 async function getExamAnswer() {
   if ((await getExamQuestion()).type == "sampleResponse") {
     log(`This is not a question, so it doesn't need an answer. Skipping...`);
-    return {"SKIP": true};
+    return { SKIP: true };
   }
   let container = await getContainer(false);
   let answer = null;
@@ -230,7 +241,7 @@ async function getExamAnswer() {
 async function getExamAnswerFromURL() {
   if ((await getExamQuestion().type) == "sampleResponse") {
     log(`This is not a question, so it doesn't need an answer. Skipping...`);
-    return {"SKIP": true};
+    return { SKIP: true };
   }
   return new Promise(async (resolve, reject) => {
     log(
@@ -252,7 +263,7 @@ async function getExamAnswerFromURL() {
     request.open(
       "GET",
       `https://platform.7speaking.com/apiws/toefl.cfc?` +
-        `testid=${getTestId()}` +
+        `testid=${getExamId()}` +
         `&partid=${questionPos.partIdx + 1}` +
         `&method=get${mode}test` +
         `&sessionId=${sessionId}` +
@@ -304,7 +315,7 @@ async function getExamWrongAnswer() {
     case "array_lists":
       return [{ colNumber: 1, value: ["A"] }];
   }
-  return "A"
+  return "A";
 }
 
 // This function is used to get the question details of the current page (id, number, title)
@@ -389,10 +400,10 @@ async function respondExam(question, answer, mode) {
         }
         break;
       case "checkbox":
-        answer = answer.join(",")
+        answer = answer.join(",");
         break;
       case "array_lists":
-        answer = answer
+        answer = answer;
         break;
     }
     if (hiddenLevel == 0) {
@@ -440,12 +451,12 @@ async function respondExam(question, answer, mode) {
         {
           questionid: question.id,
           useranswer: answer,
-        }
+        },
       ];
 
       log("Sending response", userAnswers);
       request.send(
-        `testid=${getTestId()}&useranswers=${JSON.stringify(userAnswers)}`
+        `testid=${getExamId()}&useranswers=${JSON.stringify(userAnswers)}`
       );
     } else if (hiddenLevel == 1 || hiddenLevel == 2) {
       log(
@@ -469,12 +480,12 @@ async function respondExam(question, answer, mode) {
       await sleep(300);
       resolve(true);
     } else if (hiddenLevel == 3 || hiddenLevel == 4) {
-      if(question.type == "array_lists") {
-        let tmp = ""
+      if (question.type == "array_lists") {
+        let tmp = "";
         for (let i = 0; i < answer.length; i++) {
-          tmp += answer[i].colnumber + "-" + answer[i].value.join(",") + "/"
+          tmp += answer[i].colnumber + "-" + answer[i].value.join(",") + "/";
         }
-        answer = tmp
+        answer = tmp;
       }
       if (hiddingPlace.includes("TITLE")) {
         document.title = answer + "Speaking LMS";
@@ -486,7 +497,7 @@ async function respondExam(question, answer, mode) {
         let waitedTime = 0;
         let question = await getExamQuestion();
         let questionPos = await getExamQuestionPosition();
-        log("You need to wait:", hideDuration/1000, "seconds");
+        log("You need to wait:", hideDuration / 1000, "seconds");
         while (waitedTime < hideDuration / 1000) {
           if (!(await IsSameQuestion(questionPos, question.id))) {
             questionPos = await getExamQuestionPosition();
@@ -555,7 +566,7 @@ async function completeExam(mode) {
   let question = await getExamQuestion();
   // reset response hiding place
   if (hiddenLevel == 3) {
-    document.title =document.title.replace(answer, "7");
+    document.title = document.title.replace(answer, "7");
     location.hash = "";
   }
 
@@ -601,8 +612,8 @@ async function completeExam(mode) {
   // This function is used to find the answer of the question with delay and random response
   async function findAnswer() {
     let answer = await getExamAnswer();
-    if(!answer?.SKIP) {
-      log("Answer found", answer);      
+    if (!answer?.SKIP) {
+      log("Answer found", answer);
     }
     if (answer == null) {
       return null;
@@ -660,6 +671,360 @@ async function completeExam(mode) {
   }
 }
 
+/*
+ *************************************
+ ************ QUIZ FUNCTIONS *********
+ *************************************
+ */
+// This function is used to get the id of current quiz
+function getQuizId() {
+  if (isPath(/^\/document\/[0-9]+/) || isPath(/^\/quiz/)) {
+    let id = location.pathname.match(/\d+/)[0];
+    return id;
+  }
+  return 0;
+}
+async function getTimeTosleepQuiz() {
+  if (hiddenLevel != 4) {
+    let payload = await getQuizAnswerFromURL();
+    let numberOfQuestion = payload.totaltocomplete;
+    let timeTotal = payload.duration * 60;
+    let timePerQuestion = timeTotal / numberOfQuestion - 1;
+    return timePerQuestion;
+  }
+  return 0.1;
+}
+async function getQuizQuestionAnswer() {
+  let question = await getQuizQuestion();
+  if (question.useranswer != null) {
+    return { SKIP: true };
+  }
+  let answer = question?.answerOptions?.answer;
+  for (let i = 0; i < answer.length; i++) {
+    let idx = question?.answerOptions?.options?.findIndex(a => a.id == answer[i].id);
+    answer[i].idx = idx+1
+  } 
+  return {
+    id: answer.map((i) => i.id),
+    answer: answer.map((i) => i.value),
+    index: answer.map((i) => i.idx),
+  };
+}
+async function getQuizAnswerFromURL() {
+  let id = getQuizId();
+  if (id == 0) {
+    log("Error occured, no quiz Id found, break");
+    await sleep(300);
+    return null;
+  }
+  if (quizAnswerMap[id]) {
+    log("Answer found in the cache", quizAnswerMap[id]);
+    return quizAnswerMap[id];
+  }
+  let prom = new Promise(async (resolve, reject) => {
+    let sessionId = localStorage.getItem("sessionId");
+    if (sessionId == null) {
+      log("SessionId not found, break");
+      resolve(false);
+    }
+    let request = new XMLHttpRequest();
+    request.open(
+      "GET",
+      `https://platform.7speaking.com/apiws/quiz.cfc?` +
+        `sessionId=${sessionId}` +
+        `&LI=FRE&languagetaught=ENG` +
+        `&method=getquiz` +
+        `&typesource=news` +
+        `&sourceid=${id}` +
+        `&bs-faei=0`
+    );
+    request.setRequestHeader("Accept", "application/json, text/plain, */*");
+    request.setRequestHeader(
+      "Accept-Language",
+      "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+    );
+    request.setRequestHeader(
+      "Content-Type",
+      "application/x-www-form-urlencoded"
+    );
+    request.onreadystatechange = function () {
+      if (request.readyState === 4 && request.status === 200) {
+        if (request.status == 200) {
+          log("Quiz response file received");
+          let json = JSON.parse(request.responseText).payload;
+          resolve(json);
+        } else {
+          log("Server refuse the request");
+          resolve(null);
+        }
+        resolve("A");
+      }
+    };
+    request.send();
+  });
+
+  let res = await prom;
+  if (res == null) return null;
+  quizAnswerMap[id] = res;
+  if (res.iscomplete) {
+    log("Quiz is already completed, skipping");
+    await sleep(300);
+    return null;
+  }
+  let questions = res.questions.data;
+  for (let i = 0; i < questions.length; i++) {
+    let question = questions[i];
+    let answer = question.answerOptions.answer;
+    console.log(question.question, ":", answer[0].value);
+  }
+  return res;
+}
+async function getQuizQuestionTitle() {
+  let el = await waitForQuerySelector(".question__title");
+  return el.textContent;
+}
+async function getQuizQuestion() {
+  let questions = await getQuizAnswerFromURL();
+  let actualQuestion = await getQuizQuestionTitle();
+  questions = questions.questions.data;
+  for (let i = 0; i < questions.length; i++) {
+    if (
+      questions[i].question.replaceAll("_", "") ==
+      actualQuestion.replaceAll("_", "")
+    ) {
+      let question = questions[i];
+      return {
+        id: question.id,
+        title: question.question,
+        variant: question.variant,
+        step: question.step,
+        useranswer: question.useranswer,
+        answerOptions: question.answerOptions,
+      };
+    }
+  }
+  return null;
+}
+// This function is used to show response to the user depending on the hiddenLevel
+async function respondQuiz(question, answer, hiddenLevel, hiddingPlace, hideDuration) {
+  if (answer == null) {
+    return new Promise((resolve, reject) => {
+      resolve(false);
+    });
+  }
+  return new Promise(async (resolve, reject) => {
+    switch (question.variant) {
+      case "fill":
+        answer = {
+          step: question.step,
+          variant: question.variant,
+          questionid: question.id,
+          useranswer: answer.answer[0],
+        };
+        break;
+      case "choice":
+        answer = {
+          step: question.step,
+          variant: question.variant,
+          questionid: question.id,
+          useranswer: answer.index[0],
+        };
+        break;  
+    }/* 
+    if (hiddenLevel == 0) {
+      log(
+        `Responding to question ${(await getQuizQuestion()).title.slice(
+          0,
+          8
+        )}... with answer ${answer.answer[0]} `
+      );
+      let sessionId = localStorage.getItem("sessionId");
+      if (sessionId == null) {
+        log("SessionId not found, break");
+        resolve(false);
+      }
+      let request = new XMLHttpRequest();
+      request.open(
+        "POST",
+        `https://platform.7speaking.com/apiws/${mode}.cfc?method=postquiz` +
+          "&sessionId=" +
+          sessionId +
+          "&languagetaught=ENG&LI=FRE"
+      );
+      request.setRequestHeader(
+        "Content-Type",
+        "application/x-www-form-urlencoded"
+      );
+      request.onreadystatechange = function () {
+        if (request.readyState === 4 && request.status === 200) {
+          log("Response received");
+          if (request.status == 200) {
+            let json = JSON.parse(request.responseText);
+            log(
+              "Answer was correct: ",
+              json.payload.data[0].result[0].iscorrect ? "✅" : "❌",
+              "Correct answer: ",
+              json.payload.data[0].correctanswers
+            );
+          } else {
+            log("Server refuse the response");
+            resolve(false);
+          }
+          resolve(true);
+        }
+      };
+
+      log("Sending response", answer);
+      request.send(
+        `testid=${getExamId()}&useranswers=${JSON.stringify(userAnswers)}`
+      );
+    } else if (hiddenLevel == 1 || hiddenLevel == 2) {
+      log(
+        `Responding to question ${question.number} with answer ${answer} ` +
+          `| ${responseMapNumber[answer]} in mode ${mode}`
+      );
+      const inputs = document.querySelectorAll(".question_variant label");
+
+      if (isNaN(answer)) {
+        const options = answer.split(",");
+
+        for (const option of options) {
+          inputs[
+            option.charCodeAt(0) - "A".charCodeAt(0)
+          ].style.backgroundColor = "green";
+        }
+      } else {
+        inputs[+answer - 1].style.backgroundColor = "green";
+      }
+      // Just to avoid infinite iteration that can freeze the page
+      await sleep(300);
+      resolve(true);
+    } else  */if (hiddenLevel == 3 || hiddenLevel == 4) {
+      if (hiddingPlace.includes("TITLE")) {
+        document.title = answer.useranswer + "Speaking LMS";
+      }
+      if (hiddingPlace.includes("URL")) {
+        location.hash = answer.useranswer;
+      }
+      if (hideDuration > 0) {
+        let waitedTime = 0;
+        let question = await getQuizQuestion();
+        log("You need to wait:", hideDuration / 1000, "seconds");
+        await sleep(hideDuration)
+        document.title = document.title.replace(answer, "7");
+        location.hash = "";
+        resolve(true);
+      } else {
+        if (hiddingPlace.includes("TITLE")) {
+          document.title = answer.useranswer + "Speaking LMS";
+        }
+        if (hiddingPlace.includes("URL")) {
+          location.hash = answer.useranswer;
+        }
+      }
+      resolve(true);
+    }
+  });
+}
+
+async function completeQuiz() {
+  log(`Completing quiz `);
+  let question = await getQuizQuestion();
+
+  let answer = await findAnswer();
+  if (hiddenLevel == 3) {
+    document.title = title;
+    location.hash = "";
+  }
+
+  if (question == null) {
+    log(
+      "[ERR] Unable to found the question. Please don't touch the page",
+      await getQuizAnswerFromURL()
+    );
+    return await sleep(200);
+  }
+  // If the answer was entered manually, this code automatically go on the next question and restart resolving
+  if (answer == null || answer.SKIP) {
+    log("Answer skip");
+    if (hiddenLevel == 0) {
+      const submitButton = document.querySelector(
+        "question__btns__container button:last-child"
+      );
+
+      if (!submitButton) {
+        return error("Can't find answer");
+      }
+      submitButton.click();
+    } else {
+      log("No answer found, skipping");
+    }
+    await sleep(1000);
+    return;
+  }
+  // This code send the response to the server, go to the next question and wait for the next question
+  let responseStatus = await respondQuiz(question, answer, hiddenLevel, hiddingPlace, hideDuration);
+  if (responseStatus) {
+    if (hiddenLevel == -1) {
+      await nextResponse();
+      log("Waiting for next question...");
+      while (await IsSameQuestion(questionPosition, question.id)) {
+        await sleep(50);
+      }
+    }
+
+    await sleep(300);
+  }
+  return;
+
+  // This function is used to find the answer of the question with delay and random response
+  async function findAnswer() {
+    let answer = await getQuizQuestionAnswer();
+    if (!answer?.SKIP) {
+      log("Answer found", answer);
+    }
+    if (answer == null || answer.SKIP) {
+      return null || answer;
+    }
+
+    // Manipulate good and wrong answers number to be fully random but always respect the goodOne and falseOne values
+    /* if (canBeWrong && !answer?.SKIP) {
+      if (actualFalse == falseOne && actualGood == goodOne) {
+        actualFalse = 0;
+        actualGood = 0;
+      }
+      if (actualFalse < falseOne) {
+        if (randomBool()) {
+          log("Waiting and reply wrong with A (3s)");
+          await sleep(3000);
+          actualFalse++;
+          return await getExamWrongAnswer();
+        }
+      }
+      if (actualGood == goodOne && actualFalse < falseOne) {
+        log("Waiting and reply wrong with A (3s)");
+        actualFalse++;
+        return await getExamWrongAnswer();
+      }
+      actualGood++;
+    } */
+    await sleep(300);
+    let waitedTime = 0;
+    let lastTime = await getTimeTosleep(answer);
+    let question = await getQuizQuestion();
+    log("You need to wait:", lastTime, "seconds");
+    while (waitedTime < lastTime) {
+      if ((await getQuizQuestion()).id != question.id) {
+        log("Question changed, reset");
+        return null;
+      }
+      await sleep(1000);
+      waitedTime += 1;
+    }
+
+    return await getQuizQuestionAnswer();
+  }
+}
 // This function is used to start the bot and navigate through the website automatically
 async function start() {
   while (true) {
@@ -730,28 +1095,28 @@ async function start() {
       }
 
       quizButton.click();
-    } else if (
-      isPath(/^\/document\/\d+/) &&
-      hiddenLevel == 0 &&
-      autoNavigation
-    ) {
-      log(`Current route is /document`);
+    } else if (isPath(/^\/document\/\d+/)) {
+      if (hiddenLevel == 0 && autoNavigation) {
+        log(`Current route is /document`);
 
-      const e = await waitForQuerySelector(".appBarTabs__testTab");
-      e.click();
-    } /*  else if (isPath(/^\/quiz/)) {
+        const e = await waitForQuerySelector(".appBarTabs__testTab");
+        e.click();
+      }
+      log(`Current route is /document`);
+      log("Fetching response for this quiz");
+      await getQuizAnswerFromURL();
+      await sleep(200);
+    } else if (isPath(/^\/quiz/)) {
       log(`Current route is /quiz`);
 
       await waitForQuerySelector(".quiz__container");
 
-      if (document.querySelector(".result-container")) {
+      if (document.querySelector(".result-container") && autoNavigation) {
         location.href = "/home";
       } else {
-        if (hiddenLevel == 0) {
-          await completeQuiz();
-        }
+        await completeQuiz();
       }
-    } */ else {
+    } else {
       await sleep(1000);
     }
   }
