@@ -42,6 +42,11 @@ The V2 add several things, like a new anti-bot bypass to be more undetectable. A
 And the best in this V2, is the configuration option. The first line of the script is fully of variable that you can edit to make the script act in several ways.
 Everythings is explained in the code as commentary.
 
+### Dev logs:
+Toefl is now supported in v2 - dev.
+HiddenMode 1 and 2 doesn't work and will maybe never work. cause is just useless. 
+i will now try to make quizz working in all modes
+
 ## Disclaimer
 
 Use this bot at your own risk. The developers are not responsible for any consequences arising from the use of this bot.
