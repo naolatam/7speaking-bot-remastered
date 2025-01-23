@@ -689,7 +689,7 @@ async function getTimeTosleepQuiz() {
     let payload = await getQuizAnswerFromURL();
     let numberOfQuestion = payload.totaltocomplete;
     let timeTotal = payload.duration * 60;
-    let timePerQuestion = timeTotal / numberOfQuestion - 1;
+    let timePerQuestion = timeTotal / (numberOfQuestion *2);
     return timePerQuestion;
   }
   return 0.1;
