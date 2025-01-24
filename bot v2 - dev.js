@@ -98,7 +98,7 @@ function error(message) {
 }
 // This function is used to log text in the console depending on the hiddenLevel
 function log(...text) {
-  if (hiddenLevel >= 0) {
+  if (hiddenLevel <= 1) {
     console.log("[7Speaking Bot]", ...text);
   }
 }
