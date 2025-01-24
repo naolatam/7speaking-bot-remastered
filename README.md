@@ -41,12 +41,15 @@ To use this bot, you need to add the script to an extension called Tampermonkey.
 The V2 add several things, like a new anti-bot bypass to be more undetectable. A rewrite from 0, so the code is more epurated and efficiency.
 And the best in this V2, is the configuration option. The first line of the script is fully of variable that you can edit to make the script act in several ways.
 Everythings is explained in the code as commentary.
+The V2 officially support toefl except for hiddenmode 1 and 2. Trying it will make code crash
 
 ### Dev logs:
-Toefl is now supported in v2 - dev.
-HiddenMode 1 and 2 doesn't work and will maybe never work. cause is just useless. 
-i will now try to make quizz working in all modes
+Quiz is now supported for hidden mode 4 in dev version.
+HiddenMode 0, 1 and 2 doesn't work and will maybe never work. cause i'm starting being tired of this project
 
 ## Disclaimer
 
 Use this bot at your own risk. The developers are not responsible for any consequences arising from the use of this bot.
+
+### Maybe discontinued
+I will not make any upgrade for while. Except if 7Speaking make a shit update where i will probabily just fix the stable version. Sry
