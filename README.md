@@ -44,12 +44,12 @@ Everythings is explained in the code as commentary.
 The V2 officially support toefl except for hiddenmode 1 and 2. Trying it will make code crash
 
 ### Dev logs:
-Quiz is now supported for hidden mode 4 in dev version.
-HiddenMode 0, 1 and 2 doesn't work and will maybe never work. cause i'm starting being tired of this project
+Quiz is now supported. It's only supporting Hiddenmode 1,2,3 and 4 (no automatic for now, mode 0).
+HiddenMode 0 doesn't work and will maybe never work.
 
 ## Disclaimer
 
 Use this bot at your own risk. The developers are not responsible for any consequences arising from the use of this bot.
 
 ### Maybe discontinued
-I will not make any upgrade for while. Except if 7Speaking make a shit update where i will probabily just fix the stable version. Sry
+I will stop this project when the actual dev version would be able to run in prod and will not go back on it until 7speaking patch it, and maybe more (in 2028, this project will be officially out of support)
