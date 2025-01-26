@@ -23,7 +23,7 @@ let title = "7Speaking LMS";
 // Set this to 2 for no automatic response and no logs, just a green background on rigth response
 // Set this to 3 for no automatic response, no logs, no automatic navigation, hidden response in title/URL
 // Set this to 4 for the same as 3 but with a no delay before showing the response
-let hiddenLevel = 4;
+let hiddenLevel = 1;
 
 // Set the place where you want to hide the response in hiddenLevel 3.
 // You can choose one and set multiple between:
@@ -140,12 +140,13 @@ async function getTimeTosleep(answer) {
   return 0;
 }
 // This function is used to wait for an element to load in the page
-async function waitForQuerySelector(selector, logEnabled = true) {
+async function waitForQuerySelector(selector, logEnabled = true, timeout = 50) {
   if (logEnabled) {
     log(`Waiting for querySelector('${selector}')`);
   }
 
   return new Promise((resolve, reject) => {
+    let current = 0
     const e = document.querySelector(selector);
 
     if (e) {
@@ -153,7 +154,11 @@ async function waitForQuerySelector(selector, logEnabled = true) {
     }
     const interval = setInterval(() => {
       const e = document.querySelector(selector);
-
+      current++;
+      if(current >= timeout) {
+        clearInterval(interval);
+        resolve("Timeout");
+      }
       if (e) {
         clearInterval(interval);
         resolve(e);
@@ -689,42 +694,47 @@ async function getTimeTosleepQuiz() {
     let payload = await getQuizAnswerFromURL();
     let numberOfQuestion = payload.totaltocomplete;
     let timeTotal = payload.duration * 60;
-    let timePerQuestion = timeTotal / (numberOfQuestion *2);
+    let timePerQuestion = timeTotal / (numberOfQuestion * 2);
     return timePerQuestion;
   }
   return 0.1;
 }
 async function getQuizQuestionAnswer() {
   let question = await getQuizQuestion();
+  if(question == null) {
+    return null;
+  }
   if (question.useranswer != null) {
     return { SKIP: true };
   }
   let answer = question?.answerOptions?.answer;
   for (let i = 0; i < answer.length; i++) {
-    let idx = question?.answerOptions?.options?.findIndex(a => a.id == answer[i].id);
-    answer[i].idx = idx+1
-  } 
+    let idx = question?.answerOptions?.options?.findIndex(
+      (a) => a.id == answer[i].id
+    );
+    answer[i].idx = idx + 1;
+  }
   return {
     id: answer.map((i) => i.id),
     answer: answer.map((i) => i.value),
     index: answer.map((i) => i.idx),
   };
 }
-async function getQuizAnswerFromURL() {
+async function getQuizAnswerFromURL(logging = true) {
   let id = getQuizId();
   if (id == 0) {
-    log("Error occured, no quiz Id found, break");
+    if (logging) log("Error occured, no quiz Id found, break");
     await sleep(300);
     return null;
   }
   if (quizAnswerMap[id]) {
-    log("Answer found in the cache", quizAnswerMap[id]);
+    if (logging) log("Quiz already found in cache", quizAnswerMap[id]);
     return quizAnswerMap[id];
   }
   let prom = new Promise(async (resolve, reject) => {
     let sessionId = localStorage.getItem("sessionId");
     if (sessionId == null) {
-      log("SessionId not found, break");
+      if (logging) log("SessionId not found, break");
       resolve(false);
     }
     let request = new XMLHttpRequest();
@@ -750,7 +760,7 @@ async function getQuizAnswerFromURL() {
     request.onreadystatechange = function () {
       if (request.readyState === 4 && request.status === 200) {
         if (request.status == 200) {
-          log("Quiz response file received");
+          if (logging) log("Quiz response file received");
           let json = JSON.parse(request.responseText).payload;
           resolve(json);
         } else {
@@ -779,13 +789,19 @@ async function getQuizAnswerFromURL() {
   }
   return res;
 }
-async function getQuizQuestionTitle() {
-  let el = await waitForQuerySelector(".question__title");
+async function getQuizQuestionTitle(logging = true, timeout = 50) {
+  let el = await waitForQuerySelector(".question__title", logging, timeout);
   return el.textContent;
 }
 async function getQuizQuestion() {
-  let questions = await getQuizAnswerFromURL();
-  let actualQuestion = await getQuizQuestionTitle();
+  let questions = await getQuizAnswerFromURL(false);
+  let actualQuestion = await getQuizQuestionTitle(false, 10);
+  if(actualQuestion == "Timeout") {
+    return null;
+  }
+  if(questions == null) {
+    return null;
+  }
   questions = questions.questions.data;
   for (let i = 0; i < questions.length; i++) {
     if (
@@ -806,7 +822,7 @@ async function getQuizQuestion() {
   return null;
 }
 // This function is used to show response to the user depending on the hiddenLevel
-async function respondQuiz(question, answer, hiddenLevel, hiddingPlace, hideDuration) {
+async function respondQuiz(question, answer) {
   if (answer == null) {
     return new Promise((resolve, reject) => {
       resolve(false);
@@ -828,9 +844,11 @@ async function respondQuiz(question, answer, hiddenLevel, hiddingPlace, hideDura
           variant: question.variant,
           questionid: question.id,
           useranswer: answer.index[0],
+          og: answer,
         };
-        break;  
-    }/* 
+        break;
+    }
+    /* 
     if (hiddenLevel == 0) {
       log(
         `Responding to question ${(await getQuizQuestion()).title.slice(
@@ -878,28 +896,25 @@ async function respondQuiz(question, answer, hiddenLevel, hiddingPlace, hideDura
       request.send(
         `testid=${getExamId()}&useranswers=${JSON.stringify(userAnswers)}`
       );
-    } else if (hiddenLevel == 1 || hiddenLevel == 2) {
-      log(
-        `Responding to question ${question.number} with answer ${answer} ` +
-          `| ${responseMapNumber[answer]} in mode ${mode}`
-      );
-      const inputs = document.querySelectorAll(".question_variant label");
+    } else */ if (hiddenLevel == 1 || hiddenLevel == 2) {
+      log(`Responding to question ${question.number} with answer ${answer}`);
+      switch (question.variant) {
+        case "fill":
+          let el = document.querySelector(".question__form input");
+          el.placeholder = answer.useranswer;
+          log("Answer found", answer.useranswer, answer);
 
-      if (isNaN(answer)) {
-        const options = answer.split(",");
-
-        for (const option of options) {
-          inputs[
-            option.charCodeAt(0) - "A".charCodeAt(0)
+          break;
+        case "choice":
+          document.querySelectorAll(".answer-container button")[
+            answer.og.index[0] - 1
           ].style.backgroundColor = "green";
-        }
-      } else {
-        inputs[+answer - 1].style.backgroundColor = "green";
+          break;
       }
       // Just to avoid infinite iteration that can freeze the page
       await sleep(300);
       resolve(true);
-    } else  */if (hiddenLevel == 3 || hiddenLevel == 4) {
+    } else if (hiddenLevel == 3 || hiddenLevel == 4) {
       if (hiddingPlace.includes("TITLE")) {
         document.title = answer.useranswer + "Speaking LMS";
       }
@@ -910,7 +925,15 @@ async function respondQuiz(question, answer, hiddenLevel, hiddingPlace, hideDura
         let waitedTime = 0;
         let question = await getQuizQuestion();
         log("You need to wait:", hideDuration / 1000, "seconds");
-        await sleep(hideDuration)
+        while (waitedTime < (hideDuration / 1000)) {
+          let tmp = (await getQuizQuestion())
+          if (tmp == null || tmp.id != question.id) {
+            log("Question changed, reset");
+            resolve(false);
+          }
+          await sleep(hideDuration / 10);
+          waitedTime += hideDuration / 1000 / 10;
+        }
         document.title = title;
         location.hash = "";
         resolve(true);
@@ -932,7 +955,7 @@ async function completeQuiz() {
   let question = await getQuizQuestion();
 
   let answer = await findAnswer();
-  if (hiddenLevel == 3 ||hiddenLevel == 4) {
+  if (hiddenLevel == 3 || hiddenLevel == 4) {
     document.title = title;
     location.hash = "";
   }
@@ -963,7 +986,7 @@ async function completeQuiz() {
     return;
   }
   // This code send the response to the server, go to the next question and wait for the next question
-  let responseStatus = await respondQuiz(question, answer, hiddenLevel, hiddingPlace, hideDuration);
+  let responseStatus = await respondQuiz(question, answer);
   if (responseStatus) {
     if (hiddenLevel == -1) {
       await nextResponse();
@@ -980,12 +1003,13 @@ async function completeQuiz() {
   // This function is used to find the answer of the question with delay and random response
   async function findAnswer() {
     let answer = await getQuizQuestionAnswer();
-    if (!answer?.SKIP) {
-      log("Answer found", answer);
-    }
     if (answer == null || answer.SKIP) {
       return null || answer;
     }
+    if (!answer?.SKIP) {
+      log("Answer found", answer);
+    }
+    
 
     // Manipulate good and wrong answers number to be fully random but always respect the goodOne and falseOne values
     /* if (canBeWrong && !answer?.SKIP) {
@@ -1014,7 +1038,8 @@ async function completeQuiz() {
     let question = await getQuizQuestion();
     log("You need to wait:", lastTime, "seconds");
     while (waitedTime < lastTime) {
-      if ((await getQuizQuestion()).id != question.id) {
+      let tmp = (await getQuizQuestion())
+      if (tmp == null || tmp.id != question.id) {
         log("Question changed, reset");
         return null;
       }
