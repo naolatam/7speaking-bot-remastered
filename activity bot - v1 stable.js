@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         7Speaking Activity bot
 // @namespace    https://github.com/naolatam/7speaking-bot-remastered
-// @version      1.1.5
+// @version      1.1.6
 // @description  7Speaking is fucked up
 // @author       Borred
 // @match        https://user.7speaking.com/*
@@ -367,6 +367,7 @@ async function getQuizQuestionTitle(timeout = 50) {
     return el.textContent;
 }
 async function getQuizQuestion() {
+    const normalize = (str) => str.replaceAll("_", "").replaceAll("\\r", "").replaceAll("\\n").replaceAll(/\s+/g, '').trim()
     logging = false;
     let questions = await getQuizAnswerFromURL();
     let actualQuestion = await getQuizQuestionTitle(10);
@@ -379,10 +380,11 @@ async function getQuizQuestion() {
     }
     questions = questions.questions.data;
     for (let i = 0; i < questions.length; i++) {
-
+        let a = questions[i].question.replaceAll("_", "").replaceAll("\\r", "").replaceAll("\\n").trim()
+        let b = actualQuestion.replaceAll("_", "").replaceAll("\\r", "").replaceAll("\\n").trim()
+        
         if (
-            questions[i].question.replaceAll("_", "").replaceAll("\\r", "").replaceAll("\\n").trim() ==
-            actualQuestion.replaceAll("_", "").replaceAll("\\r", "").replaceAll("\\n").trim()
+            normalize(a) == normalize(b)
         ) {
             let question = questions[i];
             return {
