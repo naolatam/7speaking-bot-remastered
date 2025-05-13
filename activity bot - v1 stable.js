@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         7Speaking Activity bot
 // @namespace    https://github.com/naolatam/7speaking-bot-remastered
-// @version      1.1.3
+// @version      1.1.4
 // @description  7Speaking is fucked up
 // @author       Borred
 // @match        https://user.7speaking.com/*
@@ -46,7 +46,7 @@ let logging = true;
 
 let actualGood = 0;
 let actualFalse = 0;
-
+let failToGetQuestion = 0;
 // This table is void. It's used to store response parse from URL.
 let responseMapQuestion = {};
 
@@ -378,9 +378,10 @@ async function getQuizQuestion() {
     }
     questions = questions.questions.data;
     for (let i = 0; i < questions.length; i++) {
+
         if (
-            questions[i].question.replaceAll("_", "") ==
-            actualQuestion.replaceAll("_", "")
+            questions[i].question.replaceAll("_", "").replaceAll("\\r", "").replaceAll("\\n").trim() ==
+            actualQuestion.replaceAll("_", "").replaceAll("\\r", "").replaceAll("\\n").trim()
         ) {
             let question = questions[i];
             return {
@@ -467,14 +468,18 @@ async function completeQuiz() {
     let question = await getQuizQuestion();
 
     let answer = await findAnswer();
+    if (failToGetQuestion > 5) {
 
+    }
     if (question == null) {
         log(
             "[ERR] Unable to found the question. Please don't touch the page",
             await getQuizAnswerFromURL()
         );
+        failToGetQuestion++;
         return await sleep(200);
     }
+    failToGetQuestion = 0;
     // If the answer was entered manually, this code automatically go on the next question and restart resolving
     if (answer == null || answer.SKIP) {
         log("Answer skip");
