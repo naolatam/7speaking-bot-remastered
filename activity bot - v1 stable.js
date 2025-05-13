@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         7Speaking Activity bot
 // @namespace    https://github.com/naolatam/7speaking-bot-remastered
-// @version      1.1.4
+// @version      1.1.5
 // @description  7Speaking is fucked up
 // @author       Borred
 // @match        https://user.7speaking.com/*
@@ -92,6 +92,7 @@ function byPassAutomationDetection() {
     };
 
 }
+byPassAutomationDetection()
 
 // This function is used to make request to the server and cache the response
 async function makeRequest(
@@ -788,14 +789,12 @@ async function start() {
         log(
             "Before starting, we implement many timer before responding. This is just for simulating a real person reading text and listening to audio. We try to make the wait time the shorter and optimised as we can!\nThe time you need to wait will be printed in this section every time you will need to wait.\n\nDON'T TRY TO RELOAD THE PAGE! IT WILL JUST RESTART THE TIMER FROM 0! IF YOU RESPOND MANUALLY, PLEASE NOTICE THAT THE TIMER WILL NOT BE RESETED FOR CORRESPODING THE NEW QUESTION!"
         );
-        byPassAutomationDetection();
         start();
     } else {
         window.addEventListener("load", async () => {
             log(
                 "Before starting, we implement many timer before responding. This is just for simulating a real person reading text and listening to audio. We try to make the wait time the shorter and optimised as we can!\nThe time you need to wait will be printed in this section every time you will need to wait.\n\nDON'T TRY TO RELOAD THE PAGE! IT WILL JUST RESTART THE TIMER FROM 0! IF YOU RESPOND MANUALLY, PLEASE NOTICE THAT THE TIMER WILL NOT BE RESETED FOR CORRESPODING THE NEW QUESTION!"
             );
-            byPassAutomationDetection();
             start();
         });
     }
