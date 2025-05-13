@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         7Speaking Activity bot
 // @namespace    https://github.com/naolatam/7speaking-bot-remastered
-// @version      1.1.13
+// @version      1.1.14
 // @description  7Speaking is fucked up
 // @author       Borred
 // @match        https://user.7speaking.com/*
@@ -57,7 +57,7 @@ let requestCache = {};
 
 let lastCompletedTopicsId = 0;
 let completedActivities = [];
-
+let blockedEventListenerCount = 0
 /*
  ******* FUNCTIONS *******
  */
@@ -84,6 +84,7 @@ function byPassAutomationDetection() {
     const originalAddEventListener = EventTarget.prototype.addEventListener;
     EventTarget.prototype.addEventListener = function (type, listener, options) {
         if (this instanceof Element && this.classList.contains('question__form')) {
+            blockedEventListenerCount++
             console.warn(`Blocked addEventListener on element with .question__form:`, { type });
             return; // block
         }
@@ -93,6 +94,21 @@ function byPassAutomationDetection() {
 
 }
 byPassAutomationDetection()
+
+// This function is use to ensure that the bypass is apply and work!
+async function waitForBypassToTakeEffect() {
+    let loopCount = 0
+    while (blockedEventListenerCount == 0) {
+        if (loopCount > 10) {
+            log("Automation detection bypass didn't work... Reload the page")
+            window.location.reload()
+            await sleep(250)
+        }
+        await sleep(500)
+        loopCount++
+    }
+}
+
 
 // This function is used to make request to the server and cache the response
 async function makeRequest(
@@ -753,6 +769,7 @@ async function getNextActivity() {
     }
 }
 
+
 async function startNextActivity() {
     let activity = await getNextActivity();
     if (activityCountToComplete == completedActivities.length) {
@@ -777,6 +794,7 @@ async function start() {
             clearInterval(failedToFetchInterval);
         }
     }, 1000);
+
     while (true) {
         //console.clear();
 
@@ -828,6 +846,7 @@ async function start() {
             await getQuizAnswerFromURL();
             await sleep(200);
         } else if (isPath(/^\/quiz\/news/)) {
+            await waitForBypassToTakeEffect()
             log("Completing quiz response for this quiz");
             await completeQuiz();
             await sleep(200);
