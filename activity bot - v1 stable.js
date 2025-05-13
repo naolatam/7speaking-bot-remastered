@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         7Speaking Activity bot
 // @namespace    https://github.com/naolatam/7speaking-bot-remastered
-// @version      1.1.6
+// @version      1.1.13
 // @description  7Speaking is fucked up
 // @author       Borred
 // @match        https://user.7speaking.com/*
@@ -28,8 +28,8 @@ let hiddenLevel = 0;
 let activityCountToComplete = 151;
 
 // Set this to the number of good and wrong answers you want.
-let goodOne = 8;
-let falseOne = 2;
+let goodOne = 7;
+let falseOne = 3;
 
 // Set this to the time the bot should do on a quiz for every 10 minutes duration announced by 7speaking
 // Ex: for a quiz of 25 minutes, set this to 2 will do the quiz in 5 minutes
@@ -202,7 +202,7 @@ async function getUserStats() {
         },
         null,
         true,
-        true
+        false
     );
     if (request == null) {
         if (logging) log("Error while fetching stats");
@@ -254,7 +254,7 @@ async function getQuizQuestionAnswer() {
     if (question == null) {
         return null;
     }
-    if (question.useranswer != null) {
+    if (question.useranswer != null && question.useranswer != 0) {
         return { SKIP: true };
     }
     let answer = question?.answerOptions?.answer;
@@ -321,6 +321,10 @@ async function getQuizAnswerFromURL() {
             }
         };
         request.send();
+        request.onerror = function () {
+            log("Error while fetching quiz");
+            resolve(null);
+        }
     });
 
     let res = await prom;
@@ -382,7 +386,7 @@ async function getQuizQuestion() {
     for (let i = 0; i < questions.length; i++) {
         let a = questions[i].question.replaceAll("_", "").replaceAll("\\r", "").replaceAll("\\n").trim()
         let b = actualQuestion.replaceAll("_", "").replaceAll("\\r", "").replaceAll("\\n").trim()
-        
+
         if (
             normalize(a) == normalize(b)
         ) {
@@ -399,7 +403,7 @@ async function getQuizQuestion() {
     }
     return null;
 }
-// This function is used to show response to the user depending on the hiddenLevel
+// This function is used to answer the question
 async function respondQuiz(question, answer) {
     if (answer == null) {
         return false;
@@ -409,7 +413,7 @@ async function respondQuiz(question, answer) {
         case "fill":
             element = await waitForQuerySelector(".answer-container input", false)
             element = getReactElement(element.parentElement.parentElement.parentElement.parentElement)
-            element.child.memoizedProps.setAnswer(answer.answer[0])
+            element.child.memoizedProps.setAnswer(answer.answer[0] + "")
 
             answer = {
                 step: question.step,
@@ -435,6 +439,10 @@ async function respondQuiz(question, answer) {
             await sleep(750)
             break;
     }
+    return await submitAnswer();
+}
+// This function is used to send the answer to 7speaking using their own method
+async function submitAnswer() {
     const submitButton = document.querySelector(
         ".question__btns__container button"
     );
@@ -443,10 +451,50 @@ async function respondQuiz(question, answer) {
         return error("Can't find answer");
     }
     submitButton.click();
+
+    // This code wait for the submit button to be change to 'Suivant' instead of 'Valider'. Because some times the request is not sent due to 503 error.
+    let res = await new Promise((resolve, reject) => {
+        let current = 0;
+        let good = 0
+        if (submitButton.innerText != "Valider") {
+            resolve(true)
+        }
+        const interval = setInterval(() => {
+            if (submitButton.innerText != "Valider") {
+                if (good > 2) {
+                    clearInterval(interval);
+                    resolve(true)
+                }
+                good++
+            } else {
+                good = 0
+            }
+            if (submitButton.innerText == "Valider" && !submitButton.disabled) {
+                if (current > 10) {
+                    clearInterval(interval);
+                    resolve(false)
+                }
+                current++;
+            }
+
+        }, 100);
+    })
+    if (res == false) {
+        log("Error while submitting answer");
+        log("Try again in 2s")
+        await sleep(2000)
+        await new Promise((resolv) => {
+            setTimeout(async () => {
+                await submitAnswer();
+                resolv(true)
+            }, 0);
+        })
+    }
+
     await sleep(800)
     return true;
-
 }
+// This function is used to navigate to the next question
 async function nextResponse() {
     const submitButton = document.querySelector(
         ".question__btns__container button"
@@ -722,6 +770,13 @@ async function startNextActivity() {
 }
 // This function is used to start the bot and navigate through the website automatically
 async function start() {
+    let failedToFetchInterval = setInterval(async () => {
+        if (document.body.outerHTML.includes("Failed to fetch")) {
+            log("Failed to fetch, reloading the page");
+            window.location.reload();
+            clearInterval(failedToFetchInterval);
+        }
+    }, 1000);
     while (true) {
         //console.clear();
 
@@ -729,17 +784,27 @@ async function start() {
             log("Not logged in, wait 1s");
             await sleep(1000);
             continue;
-        } let stats = await getUserStats().catch((err) => {
-            log("Error while fetching stats", err);
-            return null;
         }
-        );
-        if (stats == null) {
-            log("Unable to fetch stats");
-        }
+        getUserStats()
+            .then((stats) => {
+                if (stats == null) {
+                    log("Unable to fetch stats");
+                }
+                log("Completed activities %: ", (stats * 100 / activityCountToComplete).toFixed(2));
+                log("Completed activities: ", stats);
+                if (activityCountToComplete == stats) {
+                    log("All activities completed");
+                    log("Stopping bot");
+                    return false;
+                }
+            })
+            .catch((err) => {
+                log("Error while fetching stats", err);
+                return null;
+            }
+            );
 
-        log("Completed activities %: ", (stats * 100 / activityCountToComplete).toFixed(2));
-        log("Completed activities: ", stats);
+
 
         log(`Analysing current route`);
 
