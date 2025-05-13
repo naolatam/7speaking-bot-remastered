@@ -29,6 +29,11 @@ To use this bot, you need to add the script to an extension called Tampermonkey.
 - **Status**: Contains the latest updates but may not work properly.
 - **Usage**: Use with caution, as it may have unstable features.
 
+### `Activity bot - v1 stable`
+- **Description**: This script is a new one i just ended. It's use to do activity on 7speaking automatically. It will complete all answers from quiz and go back to home after, and start again.
+- **Status**: This is the first version i do of this script. This one is 95% stable and usable. 
+- **Usage**: Use with caution, it is 100% automatic, there is no mode to hide it. 
+
 ## Usage
 
 1. Choose the version of the script you want to use.
@@ -47,9 +52,13 @@ The V2 officially support toefl except for hiddenmode 1 and 2. Trying it will ma
 Quiz is now supported. It's only supporting Hiddenmode 1,2,3 and 4 (no automatic for now, mode 0).
 HiddenMode 0 doesn't work and will maybe never work.
 
+### Activity Logs:
+Quiz is now supported and fully automatic. The script override `addEventListener` original method to allow full controls on eventListener.
+Allowing to disable automation detection of 7speaking.
+
 ## Disclaimer
 
 Use this bot at your own risk. The developers are not responsible for any consequences arising from the use of this bot.
 
-### Maybe discontinued
-I will stop this project when the actual dev version would be able to run in prod and will not go back on it until 7speaking patch it, and maybe more (in 2028, this project will be officially out of support)
+###  discontinued
+This project is no longer actively maintained. The bot is fully functional and automates 7Speaking tasks effectively. Updates will only be made if a pull request is submitted or if 7Speaking introduces changes that break the bot. The expected end-of-life (EOL) for this project is 2028.
