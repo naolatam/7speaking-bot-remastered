@@ -862,9 +862,9 @@ async function start() {
 
         } else {
             if (isPath(/^\autologin\//)) {
-                await sleep(100);
                 continue;
             }
+            await sleep(100);
 
         }
     }
