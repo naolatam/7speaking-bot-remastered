@@ -384,7 +384,7 @@ async function getQuizWrongAnswer() {
 
 async function getQuizQuestionTitle(timeout = 50) {
     let el = await waitForQuerySelector(".question__title", logging, timeout);
-    return el.textContent;
+    return el.textContent?? el;
 }
 async function getQuizQuestion() {
     const normalize = (str) => str.replaceAll("_", "").replaceAll("\\r", "").replaceAll("\\n").replaceAll(/\s+/g, '').trim()
@@ -392,7 +392,7 @@ async function getQuizQuestion() {
     let questions = await getQuizAnswerFromURL();
     let actualQuestion = await getQuizQuestionTitle(10);
     logging = true;
-    if (actualQuestion == "Timeout") {
+    if (actualQuestion == "Timeout" || actualQuestion == null) {
         return null;
     }
     if (questions == null) {
